@@ -5,9 +5,10 @@
 
 # ==============================================================================================================================
 
-# The code below checks if the entered username and password match a valid combination in the user.txt file. 
+# The code below defines all necessary functions and checks if the entered username and password match a valid combination in the user.txt file. 
 # If a match is found, it logs the user in. If not, it prompts the user to enter their credentials again until a match is found 
 # or the user quits.
+
 import datetime
 
 def login():
@@ -40,6 +41,7 @@ def login():
 
 login_successful, is_admin, logged_in_user = login()
 
+# This function reads the contents of the user.txt and tasks.txt files and prints a statement saying how many users and tasks there are.
 def print_statistics():
     # Count the number of registered users
     with open('user.txt', 'r') as f:
@@ -59,6 +61,97 @@ def print_statistics():
                 num_tasks += 1
     # Print the statistics
     print(f"\nThere are currently {num_users} registered users and {num_tasks} tasks assigned.")
+    return
+
+# This function allows the admin to register new users. It writes the login details to users.txt 
+def register_user(username):
+    if username == 'admin':
+        new_user = input("Enter a new username: ")
+        password = input("Enter a new password: ")
+        while True:
+            password_confirmation = input("Confirm password: ")
+            if password == password_confirmation:
+                break
+        with open('user.txt', 'a') as file:
+            file.write(f'\n{new_user}, {password}\n')
+            print("\nNew user added successfully!")
+    else:
+        print("You do not have permission to register new users.")
+
+# This function allows the admin to assign tasks to users. It checks if username is found in user.txt and if so, adds tasks details to tasks.txt
+def add_task(username):
+    if username == 'admin':
+        assigned_to = input("\nEnter username of person task is assigned to: ")
+        with open('user.txt', 'r') as f:
+            contents = f.read()
+            users = contents.split("\n")
+            found = False
+            for user in users:
+                if ',' in user:
+                    username, password = user.split(',', maxsplit=1)
+                    username = username.strip()
+                    password = password.strip()
+                    if assigned_to == username:
+                        found = True
+                        break
+            if found:
+                title = input("Enter task name: ")
+                description = input("Enter task description: ")
+                due_date = input("Enter task due date: ")
+                current_date = datetime.datetime.now().strftime('%d/%m/%Y')
+                with open('tasks.txt', 'a') as file:
+                    file.write(f"{assigned_to}, {title}, {description}, {current_date}, {due_date}, No\n")
+                    print("\nTask added successfully!")
+            else:
+                print(f"\nUser '{assigned_to}' does not exist.")
+    else:
+        print("You do not have permission to add tasks.")
+
+# This function prints the contents of tasks.txt in an organised way, allowing the user to see all existing tasks
+def view_all_tasks():
+    with open('tasks.txt', 'r') as tasks_read:
+        data = tasks_read.readlines()
+        for pos, line in enumerate(data, 1):
+            split_data = line.split(', ')
+            output = f'──────[{pos}]──────\n'
+            output += '\n'
+            output += f'Assigned to: \t\t{split_data[0]}\n'
+            output += f'Task: \t\t\t{split_data[1]}\n'
+            output += f'Description: \t\t{split_data[2]}\n'
+            output += f'Assigned Date: \t\t{split_data[3]}\n'
+            output += f'Due Date: \t\t{split_data[4]}\n'
+            output += f'Is completed: \t\t{split_data[5]}\n'
+            output += '\n'
+            output += '────────────\n'
+
+            print(output)
+
+# This function prints tasks assigned only to the currently logged in user
+def view_my_tasks(logged_in_user):
+    with open('tasks.txt', 'r') as tasks_read:
+        data = tasks_read.readlines()
+        my_tasks = []
+        for line in data:
+            if line.startswith(logged_in_user + ', '):
+                my_tasks.append(line)
+
+        if my_tasks:
+            for pos, line in enumerate(my_tasks, 1):
+                split_data = line.split(', ')
+                output = f'──────[{pos}]──────\n'
+                output += '\n'
+                output += f'Assigned to: \t\t{split_data[0]}\n'
+                output += f'Task: \t\t\t{split_data[1]}\n'
+                output += f'Description: \t\t{split_data[2]}\n'
+                output += f'Assigned Date: \t\t{split_data[3]}\n'
+                output += f'Due Date: \t\t{split_data[4]}\n'
+                output += f'Is completed: \t\t{split_data[5]}\n'
+                output += '\n'
+                output += '────────────\n'
+                print(output)
+        else:
+            print("\nYou have no tasks.")
+
 
 # This part of the code shows the user two different menus and options depending on whether the logged in user is the admin or not.
 while True:
@@ -85,107 +178,26 @@ while True:
         print("╚══════════════════════════════════════╝")
         menu = input(": ").lower()
 
-# This code counts the number of registered users and tasks in the program and prints them out as statistics for 
-# the admin user to view.
+# The code that follows allows the selection of a particular menu item and calls the relevant function
     if menu == 's':
         if is_admin:
             print_statistics()
 
-# This part of code registers a new user if the menu option selected is 'r' and the current user is 'admin'. 
-# It prompts the user to enter a new username and password, and checks that the password is confirmed correctly before writing 
-# the new user to the 'user.txt' file
     if menu == 'r':
-        if username == 'admin':
-            new_user = input("Enter a new username: ")
-            password = input("Enter a new password: ")
-            while True:
-                password_confirmation = input("Confirm password: ")
-                if password == password_confirmation:
-                    break
-            with open('user.txt', 'a') as file:
-                file.write(f'\n{new_user}, {password}\n')
-                print("\nNew user added successfully!")
-        else:
-            print("You do not have permission to register new users.")
+        if is_admin:
+            register_user(logged_in_user)
 
-# This code checks if the user is an admin. If the user is an admin, it allows the user to input a username to assign 
-# a task to and input details for the task. It then checks if the assigned user exists and, if they do, it writes the task details
-# to a file and prints a message indicating that the task was added successfully.
-    elif menu == 'a':
-        if username == 'admin':
-            assigned_to = input("\nEnter username of person task is assigned to: ")
-            with open('user.txt', 'r') as f:
-                contents = f.read()
-                users = contents.split("\n")
-                found = False
-                for user in users:
-                    if ',' in user:
-                        username, password = user.split(',', maxsplit=1)
-                        username = username.strip()
-                        password = password.strip()
-                        if assigned_to == username:
-                            found = True
-                            break
-                if found:
-                    title = input("Enter task name: ")
-                    description = input("Enter task description: ")
-                    due_date = input("Enter task due date: ")
-                    current_date = datetime.datetime.now().strftime('%d/%m/%Y')
-                    with open('tasks.txt', 'a') as file:
-                        file.write(f"{assigned_to}, {title}, {description}, {current_date}, {due_date}, No\n")
-                        print("\nTask added successfully!")
-                else:
-                    print(f"\nUser '{assigned_to}' does not exist.")
-        else:
-            print("You do not have permission to add tasks.")
+    if menu == 'a':
+        if is_admin:
+            add_task(logged_in_user)
 
-# This code reads the contents of 'tasks.txt', iterates through each line, splits the line on the delimiter ', ' 
-# and formats the resulting split data into a multi-line string. It then prints this formatted string.
-    elif menu == 'va':
-        with open('tasks.txt', 'r') as tasks_read:
-            data = tasks_read.readlines()
-            for pos, line in enumerate(data, 1):
-                split_data = line.split(', ')
-                output = f'──────[{pos}]──────\n'
-                output += '\n'
-                output += f'Assigned to: \t\t{split_data[0]}\n'
-                output += f'Task: \t\t\t{split_data[1]}\n'
-                output += f'Description: \t\t{split_data[2]}\n'
-                output += f'Assigned Date: \t\t{split_data[3]}\n'
-                output += f'Due Date: \t\t{split_data[4]}\n'
-                output += f'Is completed: \t\t{split_data[5]}\n'
-                output += '\n'
-                output += '────────────\n'
+    if menu == 'va':
+        view_all_tasks()
 
-                print(output)
+    if menu == 'vm':
+        view_my_tasks(logged_in_user)
 
-# This part of code reads the contents of 'tasks.txt' and displays the contents relevant to the currently logged in user.
-    elif menu == 'vm':
-        with open('tasks.txt', 'r') as tasks_read:
-            data = tasks_read.readlines()
-            my_tasks = []
-            for line in data:
-                if line.startswith(logged_in_user + ', '):
-                    my_tasks.append(line)
-
-            if my_tasks:
-                for pos, line in enumerate(my_tasks, 1):
-                    split_data = line.split(', ')
-                    output = f'──────[{pos}]──────\n'
-                    output += '\n'
-                    output += f'Assigned to: \t\t{split_data[0]}\n'
-                    output += f'Task: \t\t\t{split_data[1]}\n'
-                    output += f'Description: \t\t{split_data[2]}\n'
-                    output += f'Assigned Date: \t\t{split_data[3]}\n'
-                    output += f'Due Date: \t\t{split_data[4]}\n'
-                    output += f'Is completed: \t\t{split_data[5]}\n'
-                    output += '\n'
-                    output += '────────────\n'
-                    print(output)
-            else:
-                print("\nYou have no tasks.")
-
-    elif menu == 'e':
+    if menu == 'e':
         print("\nGoodbye!")
         break
 
